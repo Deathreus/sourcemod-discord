@@ -1,2 +1,13 @@
+## Ignore build results and builders
 *.smx
+*.exe
 discord_api.zip
+
+## Ignore additional includes we aren't requiring
+*.inc
+!csgocolors.inc
+!discord.inc
+!json.inc
+!SteamWorks.inc
+!include/discord/**
+!include/json/**
