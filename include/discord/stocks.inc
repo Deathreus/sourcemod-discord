@@ -1,82 +1,122 @@
-stock int JsonObjectGetInt(Handle hElement, char[] key) {
-	Handle hObject = json_object_get(hElement, key);
-	if(hObject == INVALID_HANDLE) return 0;
-	
-	int value;
-	if(json_is_integer(hObject)) {
-		value = json_integer_value(hObject);
-	}else if(json_is_string(hObject)) {
-		char buffer[12];
-		json_string_value(hObject, buffer, sizeof(buffer));
-		value = StringToInt(buffer);
-	}
-	CloseHandle(hObject);
-	return value;
-}
+stock bool RenameJsonObject(JSON_Object hJson, char[] key, char[] toKey) {
+	if(hJson == null)
+		return false;
 
-stock bool JsonObjectGetString(Handle hElement, char[] key, char[] buffer, maxlength) {
-	Handle hObject = json_object_get(hElement, key);
-	if(hObject == INVALID_HANDLE) return false;
-	
-	if(json_is_integer(hObject)) {
-		IntToString(json_integer_value(hObject), buffer, maxlength);
-	}else if(json_is_string(hObject)) {
-		json_string_value(hObject, buffer, maxlength);
-	}else if(json_is_real(hObject)) {
-		FloatToString(json_real_value(hObject), buffer, maxlength);
-	}else if(json_is_true(hObject)) {
-		FormatEx(buffer, maxlength, "true");
-	}else if(json_is_false(hObject)) {
-		FormatEx(buffer, maxlength, "false");
+	switch(hJson.GetKeyType(key))
+	{
+		case Type_String: {
+			char string[256];
+			hJson.GetString(key, string, sizeof string);
+			hJson.Remove(key);
+			hJson.SetString(toKey, string);
+		}
+	    case Type_Int: {
+	    	int value = JsonObjectGetInt(hJson, key);
+	    	hJson.Remove(key);
+	    	hJson.SetInt(toKey, value);
+	    }
+	    case Type_Float: {
+	    	float value = JsonObjectGetFloat(hJson, key);
+	    	hJson.Remove(key);
+	    	hJson.SetFloat(toKey, value);
+	    }
+	    case Type_Bool: {
+	    	bool value = JsonObjectGetBool(hJson, key);
+	    	hJson.Remove(key);
+	    	hJson.SetBool(toKey, value);
+	    }
+	    case Type_Null: {
+	    	hJson.Remove(key); // We are moving this, don't delete
+	    	hJson.SetNull(toKey);
+	    }
+	    case Type_Object: {
+	    	JSON_Object obj = hJson.GetObject(key);
+	    	hJson.Remove(key); // We are moving this, don't delete
+	    	hJson.SetObject(toKey, obj);
+	    }
+	    default:
+	    	return false;
 	}
-	CloseHandle(hObject);
+
 	return true;
 }
 
-stock bool JsonObjectGetBool(Handle hElement, char[] key, bool defaultvalue=false) {
-	Handle hObject = json_object_get(hElement, key);
-	if(hObject == INVALID_HANDLE) return defaultvalue;
+stock int JsonObjectGetInt(JSON_Object hObject, char[] key, int defaultvalue=0) {
+	if(hObject == null)
+		return defaultvalue;
 	
-	bool ObjectBool = defaultvalue;
-	
-	if(json_is_integer(hObject)) {
-		ObjectBool = view_as<bool>(json_integer_value(hObject));
-	}else if(json_is_string(hObject)) {
-		char buffer[11];
-		json_string_value(hObject, buffer, sizeof(buffer));
-		if(StrEqual(buffer, "true", false)) {
-			ObjectBool = true;
-		}else if(StrEqual(buffer, "false", false)) {
-			ObjectBool = false;
-		}else {
-			int x = StringToInt(buffer);
-			ObjectBool = view_as<bool>(x);
-		}
-	}else if(json_is_real(hObject)) {
-		ObjectBool = view_as<bool>(RoundToFloor(json_real_value(hObject)));
-	}else if(json_is_true(hObject)) {
-		ObjectBool = true;
-	}else if(json_is_false(hObject)) {
-		ObjectBool = false;
+	int value;
+	if(hObject.GetKeyType(key) == Type_Int) {
+		value = hObject.GetInt(key);
+	}else if(hObject.GetKeyType(key) == Type_String) {
+		char buffer[12];
+		hObject.GetString(key, buffer, sizeof(buffer));
+		value = StringToInt(buffer);
+	}else if(hObject.GetKeyType(key) == Type_Float) {
+		value = RoundToFloor(hObject.GetFloat(key));
 	}
-	CloseHandle(hObject);
-	return ObjectBool;
+	
+	return value;
 }
 
-stock float JsonObjectGetFloat(Handle hJson, char[] key, float defaultValue=0.0) {
-	Handle hObject = json_object_get(hJson, key);
-	if(hObject == INVALID_HANDLE) return defaultValue;
+stock bool JsonObjectGetString(JSON_Object hObject, char[] key, char[] buffer, maxlength) {
+	if(hObject == null)
+		return false;
+	
+	if(hObject.GetKeyType(key) == Type_Int) {
+		IntToString(hObject.GetInt(key), buffer, maxlength);
+	}else if(hObject.GetKeyType(key) == Type_String) {
+		hObject.GetString(key, buffer, maxlength);
+	}else if(hObject.GetKeyType(key) == Type_Float) {
+		FloatToString(hObject.GetFloat(key), buffer, maxlength);
+	}else if(hObject.GetKeyType(key) == Type_Bool) {
+		FormatEx(buffer, maxlength, "%s", hObject.GetBool(key) ? "true":"false");
+	}
+	
+	return true;
+}
+
+stock bool JsonObjectGetBool(JSON_Object hObject, char[] key, bool defaultvalue=false) {
+	if(hObject == null)
+		return defaultvalue;
+	
+	bool value = defaultvalue;
+	if(hObject.GetKeyType(key) == Type_Int) {
+		value = view_as<bool>(hObject.GetInt(key));
+	}else if(hObject.GetKeyType(key) == Type_String) {
+		char buffer[8];
+		hObject.GetString(key, buffer, sizeof(buffer));
+		if(StrEqual(buffer, "true", false)) {
+			value = true;
+		}else if(StrEqual(buffer, "false", false)) {
+			value = false;
+		}else {
+			int x = StringToInt(buffer);
+			value = view_as<bool>(x);
+		}
+	}else if(hObject.GetKeyType(key) == Type_Float) {
+		value = view_as<bool>(RoundToFloor(hObject.GetFloat(key)));
+	}else if(hObject.GetKeyType(key) == Type_Bool) {
+		value = hObject.GetBool(key);
+	}
+	
+	return value;
+}
+
+stock float JsonObjectGetFloat(JSON_Object hObject, char[] key, float defaultValue=0.0) {
+	if(hObject == null)
+		return defaultValue;
 	
 	float value = defaultValue;
-	if(json_is_integer(hObject)) {
-		value = float(json_integer_value(hObject));
-	}else if(json_is_real(hObject)) {
-		value = json_real_value(hObject);
-	}else if(json_is_string(hObject)) {
+	if(hObject.GetKeyType(key) == Type_Int) {
+		value = float(hObject.GetInt(key));
+	}else if(hObject.GetKeyType(key) == Type_Float) {
+		value = hObject.GetFloat(key);
+	}else if(hObject.GetKeyType(key) == Type_String) {
 		char buffer[12];
-		json_string_value(hObject, buffer, sizeof(buffer));
+		hObject.GetString(key, buffer, sizeof(buffer));
 		value = StringToFloat(buffer);
 	}
-	CloseHandle(hObject);
+	
 	return value;
 }
