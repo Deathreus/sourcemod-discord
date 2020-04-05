@@ -10,13 +10,13 @@ public int Native_DiscordBot_DeleteMessageID(Handle plugin, int numParams) {
 	Function fCallback = GetNativeCell(4);
 	any data = GetNativeCell(5);
 	
-	DataPack dp = CreateDataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, channelid);
-	WritePackString(dp, msgid);
-	WritePackCell(dp, plugin);
-	WritePackFunction(dp, fCallback);
-	WritePackCell(dp, data);
+	DataPack dp = new DataPack();
+	dp.WriteCell(bot);
+	dp.WriteString(channelid);
+	dp.WriteString(msgid);
+	dp.WriteCell(plugin);
+	dp.WriteFunction(fCallback);
+	dp.WriteCell(data);
 	
 	ThisDeleteMessage(bot, channelid, msgid, dp);
 }
@@ -35,13 +35,13 @@ public int Native_DiscordBot_DeleteMessage(Handle plugin, int numParams) {
 	Function fCallback = GetNativeCell(4);
 	any data = GetNativeCell(5);
 	
-	DataPack dp = CreateDataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, channelid);
-	WritePackString(dp, msgid);
-	WritePackCell(dp, plugin);
-	WritePackFunction(dp, fCallback);
-	WritePackCell(dp, data);
+	DataPack dp = new DataPack();
+	dp.WriteCell(bot);
+	dp.WriteString(channelid);
+	dp.WriteString(msgid);
+	dp.WriteCell(plugin);
+	dp.WriteFunction(fCallback);
+	dp.WriteCell(data);
 	
 	ThisDeleteMessage(bot, channelid, msgid, dp);
 }
@@ -61,56 +61,59 @@ static void ThisDeleteMessage(DiscordBot bot, char[] channelid, char[] msgid, Da
 	DiscordSendRequest(request, url);
 }
 
-public Action ThisDeleteMessageDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
-	ResetPack(dp);
+public Action ThisDeleteMessageDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
 	
 	char channelid[32];
-	ReadPackString(dp, channelid, sizeof(channelid));
+	dp.ReadString(channelid, sizeof(channelid));
 	
 	char msgid[32];
-	ReadPackString(dp, msgid, sizeof(msgid));
+	dp.ReadString(msgid, sizeof(msgid));
 	
 	ThisDeleteMessage(bot, channelid, msgid, dp);
 }
 
-public int MessageDeletedResp(Handle request, bool failure, int offset, int statuscode, any dp) {
-	if(failure || statuscode != 204) {
-		if(statuscode == 429 || statuscode == 500) {
-			ResetPack(dp);
-			DiscordBot bot = ReadPackCell(dp);
+public int MessageDeletedResp(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode204NoContent) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
+
+			DiscordBot bot = dp.ReadCell();
 			
 			char channelid[32];
-			ReadPackString(dp, channelid, sizeof(channelid));
+			dp.ReadString(channelid, sizeof(channelid));
 			
 			char msgid[32];
-			ReadPackString(dp, msgid, sizeof(msgid));
+			dp.ReadString(msgid, sizeof(msgid));
 			
-			ThisDeleteMessage(bot, channelid, msgid, view_as<DataPack>(dp));
+			ThisDeleteMessage(bot, channelid, msgid, dp);
 			
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't delete message - Fail %i %i", failure, statuscode);
+
 		delete request;
-		delete view_as<Handle>(dp);
+		delete dp;
 		return;
 	}
 	
-	ResetPack(dp);
-	DiscordBot bot = ReadPackCell(dp);
+	dp.Reset();
+
+	DiscordBot bot = dp.ReadCell();
 	
 	char channelid[32];
-	ReadPackString(dp, channelid, sizeof(channelid));
+	dp.ReadString(channelid, sizeof(channelid));
 	
 	char msgid[32];
-	ReadPackString(dp, msgid, sizeof(msgid));
+	dp.ReadString(msgid, sizeof(msgid));
 	
-	Handle plugin = view_as<Handle>(ReadPackCell(dp));
-	Function func = ReadPackFunction(dp);
-	any pluginData = ReadPackCell(dp);
+	Handle plugin = dp.ReadCell();
+	Function func = dp.ReadFunction();
+	any pluginData = dp.ReadCell();
 	
 	Handle fForward = INVALID_HANDLE;
 	if(func != INVALID_FUNCTION) {
@@ -121,9 +124,10 @@ public int MessageDeletedResp(Handle request, bool failure, int offset, int stat
 		Call_PushCell(bot);
 		Call_PushCell(pluginData);
 		Call_Finish();
+		
 		delete fForward;
 	}
 	
-	delete view_as<Handle>(dp);
+	delete dp;
 	delete request;
 }

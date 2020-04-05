@@ -2,7 +2,7 @@
  * public native void GetGuildMembers(char[] guild, OnGetMembers fCallback, char[] afterUserID="", int limit=250);
  */
 public int Native_DiscordBot_GetGuildMembers(Handle plugin, int numParams) {
-	DiscordBot bot = view_as<DiscordBot>(CloneHandle(GetNativeCell(1)));
+	DiscordBot bot = view_as<DiscordBot>(GetNativeCell(1));
 	
 	char guild[32];
 	GetNativeString(2, guild, sizeof(guild));
@@ -14,21 +14,21 @@ public int Native_DiscordBot_GetGuildMembers(Handle plugin, int numParams) {
 	char afterID[32];
 	GetNativeString(5, afterID, sizeof(afterID));
 	
-	Handle hData = json_object();
-	json_object_set_new(hData, "bot", bot);
-	json_object_set_new(hData, "guild", json_string(guild));
-	json_object_set_new(hData, "limit", json_integer(limit));
-	json_object_set_new(hData, "afterID", json_string(afterID));
+	JSON_Object hData = new JSON_Object();
+	hData.SetObject("bot", bot);
+	hData.SetString("guild", guild);
+	hData.SetInt("limit", limit);
+	hData.SetString("afterID", afterID);
 	
 	Handle fwd = CreateForward(ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	AddToForward(fwd, plugin, fCallback);
-	json_object_set_new(hData, "callback", json_integer(view_as<int>(fwd)));
+	hData.SetValue("callback", fwd);
 	
 	GetMembers(hData);
 }
 
 public int Native_DiscordBot_GetGuildMembersAll(Handle plugin, int numParams) {
-	DiscordBot bot = view_as<DiscordBot>(CloneHandle(GetNativeCell(1)));
+	DiscordBot bot = view_as<DiscordBot>(GetNativeCell(1));
 	
 	char guild[32];
 	GetNativeString(2, guild, sizeof(guild));
@@ -40,21 +40,21 @@ public int Native_DiscordBot_GetGuildMembersAll(Handle plugin, int numParams) {
 	char afterID[32];
 	GetNativeString(5, afterID, sizeof(afterID));
 	
-	Handle hData = json_object();
-	json_object_set_new(hData, "bot", bot);
-	json_object_set_new(hData, "guild", json_string(guild));
-	json_object_set_new(hData, "limit", json_integer(limit));
-	json_object_set_new(hData, "afterID", json_string(afterID));
+	JSON_Object hData = new JSON_Object();
+	hData.SetObject("bot", bot);
+	hData.SetString("guild", guild);
+	hData.SetInt("limit", limit);
+	hData.SetString("afterID", afterID);
 	
 	Handle fwd = CreateForward(ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	AddToForward(fwd, plugin, fCallback);
-	json_object_set_new(hData, "callback", json_integer(view_as<int>(fwd)));
+	hData.SetValue("callback", fwd);
 	
 	GetMembers(hData);
 }
 
-static void GetMembers(Handle hData) {
-	DiscordBot bot = view_as<DiscordBot>(json_object_get(hData, "bot"));
+static void GetMembers(JSON_Object hData) {
+	DiscordBot bot = view_as<DiscordBot>(hData.GetObject("bot"));
 	
 	char guild[32];
 	JsonObjectGetString(hData, "guild", guild, sizeof(guild));
@@ -76,7 +76,6 @@ static void GetMembers(Handle hData) {
 	
 	DiscordRequest request = new DiscordRequest(url, k_EHTTPMethodGET);
 	if(request == null) {
-		delete bot;
 		CreateTimer(2.0, SendGetMembers, hData);
 		return;
 	}
@@ -85,42 +84,45 @@ static void GetMembers(Handle hData) {
 	request.SetData(hData, route);
 	
 	request.Send(route);
-	
-	delete bot;
 }
 
 public Action SendGetMembers(Handle timer, any data) {
-	GetMembers(view_as<Handle>(data));
+	GetMembers(view_as<JSON_Object>(data));
 }
 
 
-public MembersDataReceive(Handle request, bool failure, int offset, int statuscode, any dp) {
-	if(failure || (statuscode != 200)) {
-		if(statuscode == 400) {
+public MembersDataReceive(Handle request, bool failure, int offset, int statuscode, JSON_Object dp) {
+	if(failure || (statuscode != _:k_EHTTPStatusCode200OK)) {
+		if(statuscode == _:k_EHTTPStatusCode400BadRequest) {
 			PrintToServer("BAD REQUEST");
 		}
 		
-		if(statuscode == 429 || statuscode == 500) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
 			GetMembers(dp);
 			
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Send GetMembers - Fail %i %i", failure, statuscode);
+
 		delete request;
-		delete view_as<Handle>(dp);
+		delete dp;
 		return;
 	}
+
 	SteamWorks_GetHTTPResponseBodyCallback(request, GetMembersData, dp);
+
 	delete request;
 }
 
-public int GetMembersData(const char[] data, any dp) {
-	Handle hJson = json_load(data);
-	Handle hData = view_as<Handle>(dp);
-	DiscordBot bot = view_as<DiscordBot>(json_object_get(hData, "bot"));
+public int GetMembersData(const char[] data, JSON_Object hData) {
+	JSON_Object hJson = json_decode(data);
 	
-	Handle fwd = view_as<Handle>(JsonObjectGetInt(hData, "callback"));
+	DiscordBot bot = view_as<DiscordBot>(hData.GetObject("bot"));
+	
+	Handle fwd;
+	hData.GetValue("callback", fwd);
 	
 	char guild[32];
 	JsonObjectGetString(hData, "guild", guild, sizeof(guild));
@@ -133,24 +135,31 @@ public int GetMembersData(const char[] data, any dp) {
 		Call_Finish();
 	}
 	
-	delete bot;
 	if(JsonObjectGetBool(hData, "autoPaginate")) {
-		int size = json_array_size(hJson);
+		JSON_Array hArray = view_as<JSON_Array>(hJson);
+
+		int size = hArray.Length;
 		int limit = JsonObjectGetInt(hData, "limit");
 		if(limit == size) {
-			Handle hLast = json_array_get(hJson, size - 1);
-			char lastID[32];
-			json_string_value(hLast, lastID, sizeof(lastID));
-			delete hJson;
-			delete hLast;
+			JSON_Object hLast = hArray.GetObject(size - 1);
 			
-			json_object_set_new(hData, "afterID", json_string(lastID));
+			char lastID[32];
+			hLast.Encode(lastID, sizeof(lastID));
+
+			hJson.Cleanup();
+			delete hJson;
+			
+			hData.SetString("afterID", lastID);
+
 			GetMembers(hData);
+			
 			return;
 		}
 	}
 	
-	delete hJson;
 	delete hData;
 	delete fwd;
+	
+	hJson.Cleanup();
+	delete hJson;
 }

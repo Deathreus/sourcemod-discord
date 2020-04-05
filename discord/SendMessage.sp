@@ -60,79 +60,76 @@ public int Native_DiscordChannel_SendMessage(Handle plugin, int numParams) {
 }
 
 static void SendMessage(DiscordBot bot, char[] channel, char[] message, Handle fForward, any data) {
-	Handle hJson = json_object();
-	
-	json_object_set_new(hJson, "content", json_string(message));
+	JSON_Object hJson = new JSON_Object();
+	hJson.SetString("content", message);
 	
 	char url[64];
 	FormatEx(url, sizeof(url), "channels/%s/messages", channel);
 	
-	DataPack dpSafety = new DataPack();
-	WritePackCell(dpSafety, bot);
-	WritePackString(dpSafety, channel);
-	WritePackString(dpSafety, message);
-	WritePackCell(dpSafety, fForward);
-	WritePackCell(dpSafety, data);
+	DataPack dp = new DataPack();
+	dp.WriteCell(bot);
+	dp.WriteString(channel);
+	dp.WriteString(message);
+	dp.WriteCell(fForward);
+	dp.WriteCell(data);
 	
 	Handle request = PrepareRequest(bot, url, k_EHTTPMethodPOST, hJson, GetSendMessageData);
 	if(request == null) {
 		delete hJson;
-		CreateTimer(2.0, SendMessageDelayed, dpSafety);
+		CreateTimer(2.0, SendMessageDelayed, dp);
 		return;
 	}
 	
-	SteamWorks_SetHTTPRequestContextValue(request, dpSafety, UrlToDP(url));
+	SteamWorks_SetHTTPRequestContextValue(request, dp, UrlToDP(url));
 	
 	DiscordSendRequest(request, url);
 }
 
-public Action SendMessageDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
-	ResetPack(dp);
+public Action SendMessageDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
 	
 	char channel[32];
-	ReadPackString(dp, channel, sizeof(channel));
+	dp.ReadString(channel, sizeof(channel));
 	
 	char message[2048];
-	ReadPackString(dp, message, sizeof(message));
+	dp.ReadString(message, sizeof(message));
 	
-	Handle fForward = ReadPackCell(dp);
-	any dataa = ReadPackCell(dp);
+	Handle fForward = dp.ReadCell();
+	any dataa = dp.ReadCell();
 	
 	delete dp;
 	
 	SendMessage(bot, channel, message, fForward, dataa);
 }
 
-public int GetSendMessageData(Handle request, bool failure, int offset, int statuscode, any dp) {
-	if(failure || statuscode != 200) {
-		if(statuscode == 429 || statuscode == 500) {
-			ResetPack(dp);
-			DiscordBot bot = ReadPackCell(dp);
+public int GetSendMessageData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode200OK) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
+
+			DiscordBot bot = dp.ReadCell();
 			
 			char channel[32];
-			ReadPackString(dp, channel, sizeof(channel));
+			dp.ReadString(channel, sizeof(channel));
 			
 			char message[2048];
-			ReadPackString(dp, message, sizeof(message));
+			dp.ReadString(message, sizeof(message));
 			
-			Handle fForward = ReadPackCell(dp);
-			any data = ReadPackCell(dp);
-	
-			delete view_as<Handle>(dp);
+			Handle fForward = dp.ReadCell();
+			any data = dp.ReadCell();
 			
 			SendMessage(bot, channel, message, fForward, data);
 			
+			delete dp;
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Send Message - Fail %i %i", failure, statuscode);
-		delete request;
-		delete view_as<Handle>(dp);
-		return;
 	}
+
 	delete request;
-	delete view_as<Handle>(dp);
+	delete dp;
 }

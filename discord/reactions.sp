@@ -63,10 +63,10 @@ public void AddReaction(DiscordBot bot, char[] channel, char[] messageid, char[]
 	Handle request = PrepareRequest(bot, url, k_EHTTPMethodPUT, null, AddReactionReceiveData);
 	
 	DataPack dp = new DataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, channel);
-	WritePackString(dp, messageid);
-	WritePackString(dp, emoji);
+	dp.WriteCell(bot);
+	dp.WriteString(channel);
+	dp.WriteString(messageid);
+	dp.WriteString(emoji);
 	
 	if(request == dp) {
 		CreateTimer(2.0, AddReactionDelayed, dp);
@@ -81,8 +81,8 @@ public void AddReaction(DiscordBot bot, char[] channel, char[] messageid, char[]
 	DiscordSendRequest(request, url);
 }
 
-public Action AddReactionDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
+public Action AddReactionDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
 	DiscordBot bot = ReadPackCell(dp);
 	char channel[64];
@@ -96,19 +96,18 @@ public Action AddReactionDelayed(Handle timer, any data) {
 	AddReaction(bot, channel, messageid, emoji);
 }
 
-public AddReactionReceiveData(Handle request, bool failure, int offset, int statuscode, any data) {
-	if(failure || statuscode != 204) {
-		if(statuscode == 429 || statuscode == 500) {
-			
-			DataPack dp = view_as<DataPack>(data);
+public AddReactionReceiveData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode204NoContent) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
 	
-			DiscordBot bot = ReadPackCell(dp);
-			char channel[64];
-			char messageid[64];
-			char emoji[64];
-			ReadPackString(dp, channel, sizeof(channel));
-			ReadPackString(dp, messageid, sizeof(messageid));
-			ReadPackString(dp, emoji, sizeof(emoji));
+			DiscordBot bot = dp.ReadCell();
+
+			char channel[64], messageid[64], emoji[64];
+			dp.ReadString(channel, sizeof(channel));
+			dp.ReadString(messageid, sizeof(messageid));
+			dp.ReadString(emoji, sizeof(emoji));
+
 			delete dp;
 			
 			AddReaction(bot, channel, messageid, emoji);
@@ -116,14 +115,12 @@ public AddReactionReceiveData(Handle request, bool failure, int offset, int stat
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Add Reaction - Fail %i %i", failure, statuscode);
-		delete request;
-		delete view_as<Handle>(data);
-		delete view_as<Handle>(data);
-		return;
 	}
+
 	delete request;
-	delete view_as<Handle>(data);
+	delete dp;
 }
 
 ///channels/{channel.id}/messages/{message.id}/reactions/{emoji}/{user.id}
@@ -139,11 +136,11 @@ public void DeleteReaction(DiscordBot bot, char[] channel, char[] messageid, cha
 	Handle request = PrepareRequest(bot, url, k_EHTTPMethodDELETE, null, DeleteReactionReceiveData);
 	
 	DataPack dp = new DataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, channel);
-	WritePackString(dp, messageid);
-	WritePackString(dp, emoji);
-	WritePackString(dp, userid);
+	dp.WriteCell(bot);
+	dp.WriteString(channel);
+	dp.WriteString(messageid);
+	dp.WriteString(emoji);
+	dp.WriteString(userid);
 	
 	if(request == dp) {
 		CreateTimer(2.0, DeleteReactionDelayed, dp);
@@ -158,38 +155,35 @@ public void DeleteReaction(DiscordBot bot, char[] channel, char[] messageid, cha
 	DiscordSendRequest(request, url);
 }
 
-public Action DeleteReactionDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
+public Action DeleteReactionDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
-	char channel[64];
-	char messageid[64];
-	char emoji[64];
-	char userid[64];
-	ReadPackString(dp, channel, sizeof(channel));
-	ReadPackString(dp, messageid, sizeof(messageid));
-	ReadPackString(dp, emoji, sizeof(emoji));
-	ReadPackString(dp, userid, sizeof(userid));
+	DiscordBot bot = dp.ReadCell();
+
+	char channel[64], messageid[64], emoji[64], userid[64];
+	dp.ReadString(channel, sizeof(channel));
+	dp.ReadString(messageid, sizeof(messageid));
+	dp.ReadString(emoji, sizeof(emoji));
+	dp.ReadString(userid, sizeof(userid));
+
 	delete dp;
 	
 	DeleteReaction(bot, channel, messageid, emoji, userid);
 }
 
-public DeleteReactionReceiveData(Handle request, bool failure, int offset, int statuscode, any data) {
-	if(failure || statuscode != 204) {
-		if(statuscode == 429 || statuscode == 500) {
-			
-			DataPack dp = view_as<DataPack>(data);
+public DeleteReactionReceiveData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode204NoContent) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
 	
-			DiscordBot bot = ReadPackCell(dp);
-			char channel[64];
-			char messageid[64];
-			char emoji[64];
-			char userid[64];
-			ReadPackString(dp, channel, sizeof(channel));
-			ReadPackString(dp, messageid, sizeof(messageid));
-			ReadPackString(dp, emoji, sizeof(emoji));
-			ReadPackString(dp, userid, sizeof(userid));
+			DiscordBot bot = dp.ReadCell();
+
+			char channel[64], messageid[64], emoji[64], userid[64];
+			dp.ReadString(channel, sizeof(channel));
+			dp.ReadString(messageid, sizeof(messageid));
+			dp.ReadString(emoji, sizeof(emoji));
+			dp.ReadString(userid, sizeof(userid));
+
 			delete dp;
 			
 			DeleteReaction(bot, channel, messageid, emoji, userid);
@@ -197,13 +191,12 @@ public DeleteReactionReceiveData(Handle request, bool failure, int offset, int s
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Delete Reaction - Fail %i %i", failure, statuscode);
-		delete request;
-		delete view_as<Handle>(data);
-		return;
 	}
+
 	delete request;
-	delete view_as<Handle>(data);
+	delete dp;
 }
 
 public void GetReaction(DiscordBot bot, char[] channel, char[] messageid, char[] emoji, Handle fForward, any data) {
@@ -213,12 +206,12 @@ public void GetReaction(DiscordBot bot, char[] channel, char[] messageid, char[]
 	Handle request = PrepareRequest(bot, url, k_EHTTPMethodGET, null, GetReactionReceiveData);
 	
 	DataPack dp = new DataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, channel);
-	WritePackString(dp, messageid);
-	WritePackString(dp, emoji);
-	WritePackCell(dp, fForward);
-	WritePackCell(dp, data);
+	dp.WriteCell(bot);
+	dp.WriteString(channel);
+	dp.WriteString(messageid);
+	dp.WriteString(emoji);
+	dp.WriteCell(fForward);
+	dp.WriteCell(data);
 	
 	if(request == dp) {
 		CreateTimer(2.0, GetReactionDelayed, dp);
@@ -233,38 +226,39 @@ public void GetReaction(DiscordBot bot, char[] channel, char[] messageid, char[]
 	DiscordSendRequest(request, url);
 }
 
-public Action GetReactionDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
+public Action GetReactionDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
-	char channel[64];
-	char messageid[64];
-	char emoji[64];
-	ReadPackString(dp, channel, sizeof(channel));
-	ReadPackString(dp, messageid, sizeof(messageid));
-	ReadPackString(dp, emoji, sizeof(emoji));
-	Handle fForward = ReadPackCell(dp);
-	any addData = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
+
+	char channel[64], messageid[64], emoji[64];
+	dp.ReadString(channel, sizeof(channel));
+	dp.ReadString(messageid, sizeof(messageid));
+	dp.ReadString(emoji, sizeof(emoji));
+
+	Handle fForward = dp.ReadCell();
+	any addData = dp.ReadCell();
+
 	delete dp;
 	
 	GetReaction(bot, channel, messageid, emoji, fForward, addData);
 }
 
-public GetReactionReceiveData(Handle request, bool failure, int offset, int statuscode, any data) {
-	if(failure || statuscode != 204) {
-		if(statuscode == 429 || statuscode == 500) {
-			
-			DataPack dp = view_as<DataPack>(data);
+public GetReactionReceiveData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode204NoContent) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
 	
-			DiscordBot bot = ReadPackCell(dp);
-			char channel[64];
-			char messageid[64];
-			char emoji[64];
-			ReadPackString(dp, channel, sizeof(channel));
-			ReadPackString(dp, messageid, sizeof(messageid));
-			ReadPackString(dp, emoji, sizeof(emoji));
-			Handle fForward = ReadPackCell(dp);
-			any addData = ReadPackCell(dp);
+			DiscordBot bot = dp.ReadCell();
+
+			char channel[64], messageid[64], emoji[64];
+			dp.ReadString(channel, sizeof(channel));
+			dp.ReadString(messageid, sizeof(messageid));
+			dp.ReadString(emoji, sizeof(emoji));
+
+			Handle fForward = dp.ReadCell();
+			any addData = dp.ReadCell();
+
 			delete dp;
 			
 			GetReaction(bot, channel, messageid, emoji, fForward, addData);
@@ -272,47 +266,50 @@ public GetReactionReceiveData(Handle request, bool failure, int offset, int stat
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Delete Reaction - Fail %i %i", failure, statuscode);
+
 		delete request;
-		delete view_as<Handle>(data);
+		delete dp;
 		return;
 	}
 	
-	SteamWorks_GetHTTPResponseBodyCallback(request, GetReactionsData, data);
+	SteamWorks_GetHTTPResponseBodyCallback(request, GetReactionsData, dp);
 	
 	delete request;
 }
 
-public int GetReactionsData(const char[] data, any datapack) {
-	DataPack dp = view_as<DataPack>(datapack);
+public int GetReactionsData(const char[] data, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
-	char channel[64];
-	char messageid[64];
-	char emoji[64];
-	ReadPackString(dp, channel, sizeof(channel));
-	ReadPackString(dp, messageid, sizeof(messageid));
-	ReadPackString(dp, emoji, sizeof(emoji));
-	Handle fForward = ReadPackCell(dp);
-	any addData = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
+
+	char channel[64], messageid[64], emoji[64];
+	dp.ReadString(channel, sizeof(channel));
+	dp.ReadString(messageid, sizeof(messageid));
+	dp.ReadString(emoji, sizeof(emoji));
+
+	Handle fForward = dp.ReadCell();
+	any addData = dp.ReadCell();
+
 	delete dp;
 	
-	Handle hJson = json_load(data);
+	JSON_Object hJson = json_decode(data);
 	
-	ArrayList alUsers = new ArrayList();
+	ArrayList allUsers = new ArrayList();
 	
-	if(json_is_array(hJson)) {
-		for(int i = 0; i < json_array_size(hJson); i++) {
-			DiscordUser user = view_as<DiscordUser>(json_array_get(hJson, i));
-			alUsers.Push(user);
+	if(hJson.IsArray) {
+		JSON_Array hArray = view_as<JSON_Array>(hJson);
+		for(int i = 0; i < hArray.Length; i++) {
+			DiscordUser user = view_as<DiscordUser>(hArray.GetObject(i));
+			allUsers.Push(user);
 		}
 	}
-	delete hJson;
 	
 	if(fForward != null) {
 		Call_StartForward(fForward);
 		Call_PushCell(bot);
-		Call_PushCell(alUsers);
+		Call_PushCell(allUsers);
 		Call_PushString(channel);
 		Call_PushString(messageid);
 		Call_PushString(emoji);
@@ -320,9 +317,8 @@ public int GetReactionsData(const char[] data, any datapack) {
 		Call_Finish();
 	}
 	
-	for(int i = 0; i < alUsers.Length; i++) {
-		DiscordUser user = alUsers.Get(i);
-		delete user;
-	}
-	delete alUsers;
+	delete allUsers;
+	
+	hJson.Cleanup();
+	delete hJson;
 }

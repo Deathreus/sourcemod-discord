@@ -4,12 +4,12 @@ public int Native_DiscordBot_GetGuilds(Handle plugin, int numParams) {
 	Function fCallbackAll = GetNativeCell(3);
 	any data = GetNativeCell(4);
 	
-	DataPack dp = CreateDataPack();
-	WritePackCell(dp, bot);
-	WritePackCell(dp, plugin);
-	WritePackFunction(dp, fCallback);
-	WritePackFunction(dp, fCallbackAll);
-	WritePackCell(dp, data);
+	DataPack dp = new DataPack();
+	dp.WriteCell(bot);
+	dp.WriteCell(plugin);
+	dp.WriteFunction(fCallback);
+	dp.WriteFunction(fCallbackAll);
+	dp.WriteCell(data);
 	
 	ThisSendRequest(bot, dp);
 }
@@ -29,45 +29,51 @@ static void ThisSendRequest(DiscordBot bot, DataPack dp) {
 	DiscordSendRequest(request, url);
 }
 
-public Action GetGuildsDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
-	ResetPack(dp);
+public Action GetGuildsDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
 	
 	ThisSendRequest(bot, dp);
 }
 
-public int GetGuildsData(Handle request, bool failure, int offset, int statuscode, any dp) {
-	if(failure || statuscode != 200) {
-		if(statuscode == 429 || statuscode == 500) {
-			ResetPack(dp);
-			DiscordBot bot = ReadPackCell(dp);
+public int GetGuildsData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode200OK) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
+
+			DiscordBot bot = dp.ReadCell();
+
 			ThisSendRequest(bot, dp);
 			
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Retrieve Guilds - Fail %i %i", failure, statuscode);
+
 		delete request;
-		delete view_as<Handle>(dp);
+		delete dp;
 		return;
 	}
+
 	SteamWorks_GetHTTPResponseBodyCallback(request, GetGuildsData_Data, dp);
+
 	delete request;
 }
 
-public int GetGuildsData_Data(const char[] data, any datapack) {
-	Handle hJson = json_load(data);
+public int GetGuildsData_Data(const char[] data, DataPack dp) {
+	dp.Reset();
+
+	JSON_Object hJson = json_decode(data);
 	
 	//Read from datapack to get info
-	Handle dp = view_as<Handle>(datapack);
-	ResetPack(dp);
-	int bot = ReadPackCell(dp);
-	Handle plugin = view_as<Handle>(ReadPackCell(dp));
-	Function func = ReadPackFunction(dp);
-	Function funcAll = ReadPackFunction(dp);
-	any pluginData = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
+	Handle plugin = dp.ReadCell();
+	Function func = dp.ReadFunction();
+	Function funcAll = dp.ReadFunction();
+	any pluginData = dp.ReadCell();
+
 	delete dp;
 	
 	//Create forwards
@@ -83,76 +89,78 @@ public int GetGuildsData_Data(const char[] data, any datapack) {
 		AddToForward(fForwardAll, plugin, funcAll);
 	}
 	
-	ArrayList alId = null;
-	ArrayList alName = null;
-	ArrayList alIcon = null;
-	ArrayList alOwner = null;
-	ArrayList alPermissions = null;
+	ArrayList allId = null;
+	ArrayList allName = null;
+	ArrayList allIcon = null;
+	ArrayList allOwner = null;
+	ArrayList allPermissions = null;
 	
 	if(funcAll != INVALID_FUNCTION) {
-		alId = CreateArray(32);
-		alName = CreateArray(64);
-		alIcon = CreateArray(128);
-		alOwner = CreateArray();
-		alPermissions = CreateArray();
+		allId = CreateArray(32);
+		allName = CreateArray(64);
+		allIcon = CreateArray(128);
+		allOwner = CreateArray();
+		allPermissions = CreateArray();
 	}
 	
-	//Loop through json
-	for(int i = 0; i < json_array_size(hJson); i++) {
-		Handle hObject = json_array_get(hJson, i);
-		
-		static char id[32];
-		static char name[64];
-		static char icon[128];
-		bool owner = false;
-		int permissions;
-		
-		JsonObjectGetString(hObject, "id", id, sizeof(id));
-		JsonObjectGetString(hObject, "name", name, sizeof(name));
-		JsonObjectGetString(hObject, "icon", icon, sizeof(icon));
-		
-		owner = JsonObjectGetBool(hObject, "owner");
-		permissions = JsonObjectGetBool(hObject, "permissions");
-		
-		if(fForward != INVALID_HANDLE) {
-			Call_StartForward(fForward);
-			Call_PushCell(bot);
-			Call_PushString(id);
-			Call_PushString(name);
-			Call_PushString(icon);
-			Call_PushCell(owner);
-			Call_PushCell(permissions);
-			Call_PushCell(pluginData);
-			Call_Finish();
+	if(hJson.IsArray)
+	{
+		JSON_Array hArray = view_as<JSON_Array>(hJson);
+		//Loop through json
+		for(int i = 0; i < hArray.Length; i++) {
+			JSON_Object hObject = hArray.GetObject(i);
+			
+			static char id[32];
+			static char name[64];
+			static char icon[128];
+			bool owner = false;
+			int permissions;
+			
+			JsonObjectGetString(hObject, "id", id, sizeof(id));
+			JsonObjectGetString(hObject, "name", name, sizeof(name));
+			JsonObjectGetString(hObject, "icon", icon, sizeof(icon));
+			
+			owner = JsonObjectGetBool(hObject, "owner");
+			permissions = JsonObjectGetBool(hObject, "permissions");
+			
+			if(fForward != INVALID_HANDLE) {
+				Call_StartForward(fForward);
+				Call_PushCell(bot);
+				Call_PushString(id);
+				Call_PushString(name);
+				Call_PushString(icon);
+				Call_PushCell(owner);
+				Call_PushCell(permissions);
+				Call_PushCell(pluginData);
+				Call_Finish();
+			}
+			
+			if(fForwardAll != INVALID_HANDLE) {
+				allId.PushString(id);
+				allName.PushString(name);
+				allIcon.PushString(icon);
+				allOwner.Push(owner);
+				allPermissions.Push(permissions);
+			}
 		}
-		
-		if(fForwardAll != INVALID_HANDLE) {
-			alId.PushString(id);
-			alName.PushString(name);
-			alIcon.PushString(icon);
-			alOwner.Push(owner);
-			alPermissions.Push(permissions);
-		}
-		
-		delete hObject;
 	}
 	
 	if(fForwardAll != INVALID_HANDLE) {
 		Call_StartForward(fForwardAll);
 		Call_PushCell(bot);
-		Call_PushCell(alId);
-		Call_PushCell(alName);
-		Call_PushCell(alIcon);
-		Call_PushCell(alOwner);
-		Call_PushCell(alPermissions);
+		Call_PushCell(allId);
+		Call_PushCell(allName);
+		Call_PushCell(allIcon);
+		Call_PushCell(allOwner);
+		Call_PushCell(allPermissions);
 		Call_PushCell(pluginData);
 		Call_Finish();
 		
-		delete alId;
-		delete alName;
-		delete alIcon;
-		delete alOwner;
-		delete alPermissions;
+		delete allId;
+		delete allName;
+		delete allIcon;
+		delete allOwner;
+		delete allPermissions;
 		
 		delete fForwardAll;
 	}
@@ -161,5 +169,6 @@ public int GetGuildsData_Data(const char[] data, any datapack) {
 		delete fForward;
 	}
 	
+	hJson.Cleanup();
 	delete hJson;
 }

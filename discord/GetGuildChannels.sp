@@ -9,12 +9,12 @@ public int Native_DiscordBot_GetGuildChannels(Handle plugin, int numParams) {
 	any data = GetNativeCell(5);
 	
 	DataPack dp = CreateDataPack();
-	WritePackCell(dp, bot);
-	WritePackString(dp, guild);
-	WritePackCell(dp, plugin);
-	WritePackFunction(dp, fCallback);
-	WritePackFunction(dp, fCallbackAll);
-	WritePackCell(dp, data);
+	dp.WriteCell(bot);
+	dp.WriteString(guild);
+	dp.WriteCell(plugin);
+	dp.WriteFunction(fCallback);
+	dp.WriteFunction(fCallbackAll);
+	dp.WriteCell(data);
 	
 	ThisSendRequest(bot, guild, dp);
 }
@@ -34,56 +34,58 @@ static void ThisSendRequest(DiscordBot bot, char[] guild, DataPack dp) {
 	DiscordSendRequest(request, url);
 }
 
-public Action GetGuildChannelsDelayed(Handle timer, any data) {
-	DataPack dp = view_as<DataPack>(data);
-	ResetPack(dp);
+public Action GetGuildChannelsDelayed(Handle timer, DataPack dp) {
+	dp.Reset();
 	
-	DiscordBot bot = ReadPackCell(dp);
+	DiscordBot bot = dp.ReadCell();
 	
 	char guild[32];
-	ReadPackString(dp, guild, sizeof(guild));
+	dp.ReadString(guild, sizeof(guild));
 	
 	ThisSendRequest(bot, guild, dp);
 }
 
-public int GetGuildChannelsData(Handle request, bool failure, int offset, int statuscode, any dp) {
-	if(failure || statuscode != 200) {
-		if(statuscode == 429 || statuscode == 500) {
-			ResetPack(dp);
-			DiscordBot bot = ReadPackCell(dp);
+public int GetGuildChannelsData(Handle request, bool failure, int offset, int statuscode, DataPack dp) {
+	if(failure || statuscode != _:k_EHTTPStatusCode200OK) {
+		if(statuscode == _:k_EHTTPStatusCode429TooManyRequests || statuscode == _:k_EHTTPStatusCode500InternalServerError) {
+			dp.Reset();
+
+			DiscordBot bot = dp.ReadCell();
 			
 			char guild[32];
-			ReadPackString(dp, guild, sizeof(guild));
+			dp.ReadString(guild, sizeof(guild));
 			
 			ThisSendRequest(bot, guild, view_as<DataPack>(dp));
 			
 			delete request;
 			return;
 		}
+
 		LogError("[DISCORD] Couldn't Retrieve Guild Channels - Fail %i %i", failure, statuscode);
+
 		delete request;
-		delete view_as<Handle>(dp);
+		delete dp;
 		return;
 	}
+
 	SteamWorks_GetHTTPResponseBodyCallback(request, GetGuildChannelsData_Data, dp);
 	delete request;
 }
 
-public int GetGuildChannelsData_Data(const char[] data, any datapack) {
-	Handle hJson = json_load(data);
+public int GetGuildChannelsData_Data(const char[] data, DataPack dp) {
+	JSON_Object hJson = json_decode(data);
 	
 	//Read from datapack to get info
-	Handle dp = view_as<Handle>(datapack);
-	ResetPack(dp);
-	int bot = ReadPackCell(dp);
+	dp.Reset();
+	DiscordBot bot = dp.ReadCell();
 	
 	char guild[32];
-	ReadPackString(dp, guild, sizeof(guild));
+	dp.ReadString(guild, sizeof(guild));
 	
-	Handle plugin = view_as<Handle>(ReadPackCell(dp));
-	Function func = ReadPackFunction(dp);
-	Function funcAll = ReadPackFunction(dp);
-	any pluginData = ReadPackCell(dp);
+	Handle plugin = dp.ReadCell();
+	Function func = dp.ReadFunction();
+	Function funcAll = dp.ReadFunction();
+	any pluginData = dp.ReadCell();
 	delete dp;
 	
 	//Create forwards
@@ -99,31 +101,30 @@ public int GetGuildChannelsData_Data(const char[] data, any datapack) {
 		AddToForward(fForwardAll, plugin, funcAll);
 	}
 	
-	ArrayList alChannels = null;
-	
+	ArrayList allChannels = null;
 	if(funcAll != INVALID_FUNCTION) {
-		alChannels = CreateArray();
+		allChannels = CreateArray();
 	}
 	
-	//Loop through json
-	for(int i = 0; i < json_array_size(hJson); i++) {
-		Handle hObject = json_array_get(hJson, i);
-		
-		DiscordChannel Channel = view_as<DiscordChannel>(hObject);
-		
-		if(fForward != INVALID_HANDLE) {
-			Call_StartForward(fForward);
-			Call_PushCell(bot);
-			Call_PushString(guild);
-			Call_PushCell(Channel);
-			Call_PushCell(pluginData);
-			Call_Finish();
-		}
-		
-		if(fForwardAll != INVALID_HANDLE) {
-			alChannels.Push(Channel);
-		}else {
-			delete Channel;
+	if(hJson.IsArray)
+	{
+		JSON_Array hArray = view_as<JSON_Array>(hJson);
+		//Loop through json
+		for(int i = 0; i < hArray.Length; i++) {
+			DiscordChannel Channel = view_as<DiscordChannel>(hArray.GetObject(i));
+			
+			if(fForward != INVALID_HANDLE) {
+				Call_StartForward(fForward);
+				Call_PushCell(bot);
+				Call_PushString(guild);
+				Call_PushCell(Channel);
+				Call_PushCell(pluginData);
+				Call_Finish();
+			}
+			
+			if(fForwardAll != INVALID_HANDLE) {
+				allChannels.Push(Channel);
+			}
 		}
 	}
 	
@@ -131,16 +132,16 @@ public int GetGuildChannelsData_Data(const char[] data, any datapack) {
 		Call_StartForward(fForwardAll);
 		Call_PushCell(bot);
 		Call_PushString(guild);
-		Call_PushCell(alChannels);
+		Call_PushCell(allChannels);
 		Call_PushCell(pluginData);
 		Call_Finish();
 		
-		for(int i = 0; i < alChannels.Length; i++) {
-			Handle hChannel = view_as<Handle>(alChannels.Get(i));
+		for(int i = 0; i < allChannels.Length; i++) {
+			Handle hChannel = view_as<Handle>(allChannels.Get(i));
 			delete hChannel;
 		}
 		
-		delete alChannels;
+		delete allChannels;
 		delete fForwardAll;
 	}
 	
@@ -148,5 +149,6 @@ public int GetGuildChannelsData_Data(const char[] data, any datapack) {
 		delete fForward;
 	}
 	
+	hJson.Cleanup();
 	delete hJson;
 }

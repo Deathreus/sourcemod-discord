@@ -47,21 +47,11 @@ methodmap DiscordRequest < Handle {
 		return view_as<DiscordRequest>(request);
 	}
 	
-	public void SetJsonBody(Handle hJson) {
+	public void SetJsonBody(JSON_Object hJson) {
 		static char stringJson[16384];
 		stringJson[0] = '\0';
 		if(hJson != null) {
-			json_dump(hJson, stringJson, sizeof(stringJson), 0, true);
-		}
-		SteamWorks_SetHTTPRequestRawPostBody(this, "application/json; charset=UTF-8", stringJson, strlen(stringJson));
-		if(hJson != null) delete hJson;
-	}
-	
-	public void SetJsonBodyEx(Handle hJson) {
-		static char stringJson[16384];
-		stringJson[0] = '\0';
-		if(hJson != null) {
-			json_dump(hJson, stringJson, sizeof(stringJson), 0, true);
+			hJson.Encode(stringJson, sizeof(stringJson));
 		}
 		SteamWorks_SetHTTPRequestRawPostBody(this, "application/json; charset=UTF-8", stringJson, strlen(stringJson));
 	}

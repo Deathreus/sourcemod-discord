@@ -4,8 +4,10 @@
 
 #include <sourcemod>
 #include <discord>
+#include <discord/channel>
+#include <discord/webhook>
+#include <discord/bot>
 #include <SteamWorks>
-#include <smjansson>
 
 #include "discord/DiscordRequest.sp"
 #include "discord/SendMessage.sp"
@@ -114,11 +116,14 @@ stock void BuildAuthHeader(Handle request, DiscordBot Bot) {
 }
 
 
-stock Handle PrepareRequest(DiscordBot bot, char[] url, EHTTPMethod method=k_EHTTPMethodGET, Handle hJson=null, SteamWorksHTTPDataReceived DataReceived = INVALID_FUNCTION, SteamWorksHTTPRequestCompleted RequestCompleted = INVALID_FUNCTION) {
+stock Handle PrepareRequest(DiscordBot bot, char[] url, EHTTPMethod method=k_EHTTPMethodGET, JSON_Object hJson=null, SteamWorksHTTPDataReceived DataReceived = INVALID_FUNCTION, SteamWorksHTTPRequestCompleted RequestCompleted = INVALID_FUNCTION) {
 	static char stringJson[16384];
 	stringJson[0] = '\0';
 	if(hJson != null) {
-		json_dump(hJson, stringJson, sizeof(stringJson), 0, true);
+		hJson.Encode(stringJson, sizeof(stringJson), true);
+
+		hJson.Cleanup();
+		delete hJson;
 	}
 	
 	//Format url
@@ -150,16 +155,18 @@ stock Handle PrepareRequest(DiscordBot bot, char[] url, EHTTPMethod method=k_EHT
 	}
 	
 	SteamWorks_SetHTTPCallbacks(request, RequestCompleted, HeadersReceived, DataReceived);
-	if(hJson != null) delete hJson;
 	
 	return request;
 }
 
-stock Handle PrepareRequestRaw(DiscordBot bot, char[] url, EHTTPMethod method=k_EHTTPMethodGET, Handle hJson=null, SteamWorksHTTPDataReceived DataReceived = INVALID_FUNCTION, SteamWorksHTTPRequestCompleted RequestCompleted = INVALID_FUNCTION) {
+stock Handle PrepareRequestRaw(DiscordBot bot, char[] url, EHTTPMethod method=k_EHTTPMethodGET, JSON_Object hJson=null, SteamWorksHTTPDataReceived DataReceived = INVALID_FUNCTION, SteamWorksHTTPRequestCompleted RequestCompleted = INVALID_FUNCTION) {
 	static char stringJson[16384];
 	stringJson[0] = '\0';
 	if(hJson != null) {
-		json_dump(hJson, stringJson, sizeof(stringJson), 0, true);
+		hJson.Encode(stringJson, sizeof(stringJson), true);
+
+		hJson.Cleanup();
+		delete hJson;
 	}
 	
 	Handle request = SteamWorks_CreateHTTPRequest(method, url);
@@ -187,7 +194,6 @@ stock Handle PrepareRequestRaw(DiscordBot bot, char[] url, EHTTPMethod method=k_
 	}
 	
 	SteamWorks_SetHTTPCallbacks(request, RequestCompleted, HeadersReceived, DataReceived);
-	if(hJson != null) delete hJson;
 	
 	return request;
 }
@@ -199,8 +205,7 @@ public int HTTPDataReceive(Handle request, bool failure, int offset, int statusc
 	delete request;
 }
 
-public int HeadersReceived(Handle request, bool failure, any data, any datapack) {
-	DataPack dp = view_as<DataPack>(datapack);
+public int HeadersReceived(Handle request, bool failure, any data, DataPack dp) {
 	if(failure) {
 		delete dp;
 		return;
@@ -212,14 +217,14 @@ public int HeadersReceived(Handle request, bool failure, any data, any datapack)
 	
 	bool exists = false;
 	
-	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Limit", xRateLimit, sizeof(xRateLimit));
-	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Remaining", xRateLeft, sizeof(xRateLeft));
-	exists = SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Reset", xRateReset, sizeof(xRateReset));
+	exists |= SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Limit", xRateLimit, sizeof(xRateLimit));
+	exists |= SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Remaining", xRateLeft, sizeof(xRateLeft));
+	exists |= SteamWorks_GetHTTPResponseHeaderValue(request, "X-RateLimit-Reset", xRateReset, sizeof(xRateReset));
 	
 	//Get url
 	char route[128];
-	ResetPack(dp);
-	ReadPackString(dp, route, sizeof(route));
+	dp.Reset();
+	dp.ReadString(route, sizeof(route));
 	delete dp;
 	
 	int reset = StringToInt(xRateReset);
@@ -256,32 +261,40 @@ public void DiscordSendRequest(Handle request, const char[] route) {
 	if(!exists) {
 		SetTrieValue(hRateReset, route, GetTime() + 5);
 		SetTrieValue(hRateLeft, route, defLimit - 1);
+
 		SteamWorks_SendHTTPRequest(request);
+
 		return;
 	}
 	
 	if(time == -1) {
 		//No x-rate-limit send
 		SteamWorks_SendHTTPRequest(request);
+
 		return;
 	}
 	
 	if(time > resetTime) {
 		SetTrieValue(hRateLeft, route, defLimit - 1);
+
 		SteamWorks_SendHTTPRequest(request);
+
 		return;
 	}else {
 		int left;
 		GetTrieValue(hRateLeft, route, left);
 		if(left == 0) {
 			float remaining = float(resetTime) - float(time) + 1.0;
-			Handle dp = new DataPack();
-			WritePackCell(dp, request);
-			WritePackString(dp, route);
-			CreateTimer(remaining, SendRequestAgain, dp);
+
+			DataPack dp;
+			CreateDataTimer(remaining, SendRequestAgain, dp);
+			dp.WriteCell(request);
+			dp.WriteString(route);
 		}else {
 			left--;
+
 			SetTrieValue(hRateLeft, route, left);
+
 			SteamWorks_SendHTTPRequest(request);
 		}
 	}
@@ -289,25 +302,16 @@ public void DiscordSendRequest(Handle request, const char[] route) {
 
 public Handle UrlToDP(char[] url) {
 	DataPack dp = new DataPack();
-	WritePackString(dp, url);
+	dp.WriteString(url);
 	return dp;
 }
 
-public Action SendRequestAgain(Handle timer, any dp) {
-	ResetPack(dp);
-	Handle request = ReadPackCell(dp);
-	char route[128];
-	ReadPackString(dp, route, sizeof(route));
-	delete view_as<Handle>(dp);
-	DiscordSendRequest(request, route);
-}
+public Action SendRequestAgain(Handle timer, DataPack dp) {
+	dp.Reset();
 
-stock bool RenameJsonObject(Handle hJson, char[] key, char[] toKey) {
-	Handle hObject = json_object_get(hJson, key);
-	if(hObject != null) {
-		json_object_set_new(hJson, toKey, hObject);
-		json_object_del(hJson, key);
-		return true;
-	}
-	return false;
+	char route[128];
+	Handle request = dp.ReadCell();
+	dp.ReadString(route, sizeof(route));
+
+	DiscordSendRequest(request, route);
 }
