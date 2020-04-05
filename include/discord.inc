@@ -3,7 +3,7 @@
 #endif
 #define _discord_included
 
-#include <smjansson>
+#include <json>
 #include <discord/stocks>
 
 typedef DiscordGuildsRetrieve = function void (DiscordBot bot, char[] id, char[] name, char[] icon, bool owner, int permissions, any data);
@@ -22,9 +22,7 @@ typedef DiscordGuildGetRoles = function void (DiscordBot bot, char[] guild, Role
  * bot/channel/message are all destroyed after callback is sent.
  * You can clone it if need to keep.
  */
-typeset OnChannelMessage { 
-	function void(DiscordBot bot, DiscordChannel channel, DiscordMessage message);
-};
+typedef OnChannelMessage = function void(DiscordBot bot, DiscordChannel channel, DiscordMessage message);
 
 typedef OnGetReactions = function void (DiscordBot bot, ArrayList Users, char[] channelID, const char[] messageID, const char[] emoji, any data);
 
@@ -35,7 +33,7 @@ typedef OnMessageDeleted = function void(DiscordBot bot, any data);
 //hMemberList is JSON array containing guild members
 typedef OnGetMembers = function void(DiscordBot bot, char[] guild, Handle hMemberList);
 
-methodmap Role < Handle {
+methodmap Role < JSON_Object {
 	public void GetID(char[] buffer, int maxlength) {
 		JsonObjectGetString(this, "id", buffer, maxlength);
 	}
@@ -69,16 +67,9 @@ methodmap Role < Handle {
 	}
 };
 
-methodmap RoleList < Handle {
-	property int Size {
-		public get() {
-			return json_array_size(this);
-		}
-	}
+methodmap RoleList < JSON_Array {
 	public Role GetRole(int i) {
-		return view_as<Role>(
-			json_array_get(this, i)
-		);
+		return view_as<Role>(this.GetObject(i));
 	}
 	public Role Get(int i) {
 		return this.GetRole(i);
