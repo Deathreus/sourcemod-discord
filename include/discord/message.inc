@@ -1,7 +1,31 @@
-methodmap MessageEmbed < Handle {
-	public MessageEmbed() {
-		Handle hObj = json_object();
-		return view_as<MessageEmbed>(hObj);
+#include <discord/user>
+
+methodmap DiscordMessage < JSON_Object {
+	public bool GetID(char[] buffer, int maxlength) {
+		return JsonObjectGetString(this, "id", buffer, maxlength);
+	}
+	
+	public bool IsPinned() {
+		return JsonObjectGetBool(this, "pinned");
+	}
+	
+	public DiscordUser GetAuthor() {
+		return view_as<DiscordUser>(this.GetObject("author"));
+	}
+	
+	public bool GetContent(char[] buffer, int maxlength) {
+		return JsonObjectGetString(this, "content", buffer, maxlength);
+	}
+	
+	public bool GetChannelID(char[] buffer, int maxlength) {
+		return JsonObjectGetString(this, "channel_id", buffer, maxlength);
+	}
+}
+
+methodmap DiscordEmbed < JSON_Object {
+	public DiscordEmbed() {
+		JSON_Object hObj = new JSON_Object();
+		return view_as<DiscordEmbed>(hObj);
 	}
 
 	public bool GetColor(char[] buffer, int maxlength) {
@@ -9,7 +33,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetColor(const char[] color) {
-		json_object_set_new(this, "color", json_string(color));
+		this.SetString("color", color);
 	}
 
 	public bool GetTitle(char[] buffer, int maxlength) {
@@ -17,7 +41,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetTitle(const char[] title) {
-		json_object_set_new(this, "title", json_string(title));
+		this.SetString("title", title);
 	}
 
 	public bool GetTitleLink(char[] buffer, int maxlength) {
@@ -25,7 +49,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetTitleLink(const char[] title_link) {
-		json_object_set_new(this, "title_link", json_string(title_link));
+		this.SetString("title_link", title_link);
 	}
 
 	public bool GetImage(char[] buffer, int maxlength) {
@@ -33,7 +57,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetImage(const char[] image_url) {
-		json_object_set_new(this, "image_url", json_string(image_url));
+		this.SetString("image_url", image_url);
 	}
 
 	public bool GetAuthor(char[] buffer, int maxlength) {
@@ -41,7 +65,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetAuthor(const char[] author_name) {
-		json_object_set_new(this, "author_name", json_string(author_name));
+		this.SetString("author_name", author_name);
 	}
 
 	public bool GetAuthorLink(char[] buffer, int maxlength) {
@@ -49,7 +73,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetAuthorLink(const char[] author_link) {
-		json_object_set_new(this, "author_link", json_string(author_link));
+		this.SetString("author_link", author_link);
 	}
 
 	public bool GetAuthorIcon(char[] buffer, int maxlength) {
@@ -57,7 +81,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetAuthorIcon(const char[] author_icon) {
-		json_object_set_new(this, "author_icon", json_string(author_icon));
+		this.SetString("author_icon", author_icon);
 	}
 
 	public bool GetThumb(char[] buffer, int maxlength) {
@@ -65,7 +89,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetThumb(const char[] thumb_url) {
-		json_object_set_new(this, "thumb_url", json_string(thumb_url));
+		this.SetString("thumb_url", thumb_url);
 	}
 
 	public bool GetFooter(char[] buffer, int maxlength) {
@@ -73,7 +97,7 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetFooter(const char[] footer) {
-		json_object_set_new(this, "footer", json_string(footer));
+		this.SetString("footer", footer);
 	}
 
 	public bool GetFooterIcon(char[] buffer, int maxlength) {
@@ -81,41 +105,44 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetFooterIcon(const char[] footer_icon) {
-		json_object_set_new(this, "footer_icon", json_string(footer_icon));
+		this.SetString("footer_icon", footer_icon);
 	}
-	/**
-	 * Note: Setting Fields will delete the handle!
-	 */
-	property Handle Fields {
+	
+	property JSON_Array Fields {
 		public get() {
-			return json_object_get(this, "fields");
+			return this.GetObject("fields");
 		}
 
-		public set(Handle value) {
-			json_object_set_new(this, "fields", value);
+		public set(JSON_Array value) {
+			if(this.HasKey("fields"))
+			{
+				this.GetObject("fields").Cleanup();
+				delete this.GetObject("fields");
+			}
+			this.SetObject("fields", value);
 		}
 	}
 
 	public void AddField(const char[] name, const char[] value, bool inline) {
-		Handle hObj = json_object();
-		json_object_set_new(hObj, "name", json_string(name));
-		json_object_set_new(hObj, "value", json_string(value));
-		json_object_set_new(hObj, "inline", json_boolean(inline));
-		Handle hArray = this.Fields;
-		if(this.Fields == null) {
-			hArray = json_array();
+		JSON_Object hObj = new JSON_Object();
+		hObj.SetString("name", name);
+		hObj.SetString("value", value);
+		hObj.SetBool("inline", inline);
+
+		JSON_Array hArray = this.Fields;
+		if(hArray == null) {
+			hArray = new JSON_Array();
+			this.Fields = hArray;
 		}
-		json_array_append_new(hArray, hObj);
-		this.Fields = hArray;
+		hArray.PushObject(hObj);
 	}
 
-	//Below don't support Slack Mode
 	public bool GetDescription(char[] buffer, int maxlength) {
 		return JsonObjectGetString(this, "description", buffer, maxlength);
 	}
 
 	public void SetDescription(const char[] description) {
-		json_object_set_new(this, "description", json_string(description));
+		this.SetString("description", description);
 	}
 
 	public bool GetURL(char[] buffer, int maxlength) {
@@ -123,6 +150,6 @@ methodmap MessageEmbed < Handle {
 	}
 
 	public void SetURL(const char[] url) {
-		json_object_set_new(this, "url", json_string(url));
+		this.SetString("url", url);
 	}
 };
