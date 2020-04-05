@@ -1,13 +1,17 @@
-methodmap DiscordBot < StringMap {
+methodmap DiscordBot < JSON_Object {
 	public DiscordBot(const char[] token) {
-		Handle json = json_object();
-		json_object_set_new(json, "token", json_string(token));
+		JSON_Object json = new JSON_Object();
+		json.SetString("token", token);
 		
 		return view_as<DiscordBot>(json);
 	}
 	
 	public void StopListening() {
-		json_object_del(this, "listeningChannels");
+		JSON_Object hObject = this.GetObject("listeningChannels");
+		this.SetNull("listeningChannels");
+
+		hObject.Cleanup();
+		delete hObject;
 	}
 	
 	property float MessageCheckInterval {
@@ -15,7 +19,7 @@ methodmap DiscordBot < StringMap {
 			return JsonObjectGetFloat(this, "messageInterval", 3.0);
 		}
 		public set(float value) {
-			json_object_set_new(this, "messageInterval", json_real(value));
+			this.SetFloat("messageInterval", value);
 		}
 	}
 	
@@ -24,33 +28,30 @@ methodmap DiscordBot < StringMap {
 	/** 
 	 * Retrieves a list of Channels the bot is listening to for messages
 	 */
-	public Handle GetListeningChannels() {
-		return json_object_get(this, "listeningChannels");
+	public JSON_Array GetListeningChannels() {
+		return this.GetObject("listeningChannels");
 	}
 	
 	/**
 	 * Checks if the bot is listening to channel for messages
 	 * @param DiscordChannel Channel
 	 */
-	public bool IsListeningToChannel(DiscordChannel Channel) {
+	public bool IsListeningToChannel(DiscordChannel channel) {
 		char id[32];
-		Channel.GetID(id, sizeof(id));
+		channel.GetID(id, sizeof(id));
 		
-		Handle hChannels = this.GetListeningChannels();
+		JSON_Array hChannels = this.GetListeningChannels();
 		if(hChannels == null) return false;
 		
-		for(int i = 0; i < json_array_size(hChannels); i++) {
-			DiscordChannel tempChannel = view_as<DiscordChannel>(json_array_get(hChannels, i));
+		for(int i = 0; i < hChannels.Length; i++) {
+			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
+			
 			static char tempID[32];
 			tempChannel.GetID(tempID, sizeof(tempID));
 			if(StrEqual(id, tempID, false)) {
-				delete tempChannel;
-				delete hChannels;
 				return true;
 			}
-			delete tempChannel;
 		}
-		delete hChannels;
 		return false;
 	}
 	
@@ -59,21 +60,18 @@ methodmap DiscordBot < StringMap {
 	 * @param DiscordChannel Channel
 	 */
 	public bool IsListeningToChannelID(const char[] id) {
-		Handle hChannels = this.GetListeningChannels();
+		JSON_Array hChannels = this.GetListeningChannels();
 		if(hChannels == null) return false;
 		
-		for(int i = 0; i < json_array_size(hChannels); i++) {
-			DiscordChannel tempChannel = view_as<DiscordChannel>(json_array_get(hChannels, i));
+		for(int i = 0; i < hChannels.Length; i++) {
+			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
+
 			static char tempID[32];
 			tempChannel.GetID(tempID, sizeof(tempID));
 			if(StrEqual(id, tempID, false)) {
-				delete tempChannel;
-				delete hChannels;
 				return true;
 			}
-			delete tempChannel;
 		}
-		delete hChannels;
 		return false;
 	}
 	
@@ -81,24 +79,23 @@ methodmap DiscordBot < StringMap {
 	 * Stops the bot from listening to that channel for messages
 	 * @param DiscordChannel Channel
 	 */
-	public void StopListeningToChannel(DiscordChannel Channel) {
+	public void StopListeningToChannel(DiscordChannel channel) {
 		char id[32];
-		Channel.GetID(id, sizeof(id));
+		channel.GetID(id, sizeof(id));
 		
-		Handle channels = this.GetListeningChannels();
-		if(channels == null) return;
+		JSON_Array hChannels = this.GetListeningChannels();
+		if(hChannels == null) return;
 		
-		for(int i = 0; i < json_array_size(channels); i++) {
-			DiscordChannel tempChannel = view_as<DiscordChannel>(json_array_get(channels, i));
+		for(int i = 0; i < hChannels.Length; i++) {
+			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
+
 			static char tempID[32];
 			tempChannel.GetID(tempID, sizeof(tempID));
 			if(StrEqual(id, tempID, false)) {
-				json_array_remove(channels, i);
-				i--;
+				hChannels.Remove(i); --i;
 				delete tempChannel;
 			}
 		}
-		delete channels;
 	}
 	
 	/**
@@ -106,36 +103,35 @@ methodmap DiscordBot < StringMap {
 	 * @param DiscordChannel Channel
 	 */
 	public void StopListeningToChannelID(const char[] id) {
-		Handle channels = this.GetListeningChannels();
-		if(channels == null) return;
+		JSON_Array hChannels = this.GetListeningChannels();
+		if(hChannels == null) return;
 		
-		for(int i = 0; i < json_array_size(channels); i++) {
-			DiscordChannel tempChannel = view_as<DiscordChannel>(json_array_get(channels, i));
+		for(int i = 0; i < hChannels.Length; i++) {
+			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
+
 			static char tempID[32];
 			tempChannel.GetID(tempID, sizeof(tempID));
 			if(StrEqual(id, tempID, false)) {
-				json_array_remove(channels, i);
-				i--;
+				hChannels.Remove(i); --i;
 				delete tempChannel;
 			}
 		}
-		delete channels;
 	}
 	
 	public DiscordChannel GetListeningChannelByID(const char[] id) {
-		Handle channels = this.GetListeningChannels();
-		if(channels == null) return null;
+		JSON_Array hChannels = this.GetListeningChannels();
+		if(hChannels == null) return false;
 		
-		for(int i = 0; i < json_array_size(channels); i++) {
-			DiscordChannel tempChannel = view_as<DiscordChannel>(json_array_get(channels, i));
+		for(int i = 0; i < hChannels.Length; i++) {
+			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
+
 			static char tempID[32];
 			tempChannel.GetID(tempID, sizeof(tempID));
 			if(StrEqual(id, tempID, false)) {
-				delete channels;
 				return tempChannel;
 			}
 		}
-		delete channels;
+
 		return null;
 	}
 	
@@ -144,22 +140,21 @@ methodmap DiscordBot < StringMap {
 	 * The Channel handle is duplicated. Feel free to close yours.
 	 * @param DiscordChannel Channel
 	 */
-	public void StartListeningToChannel(DiscordChannel Channel, OnChannelMessage fCallback) {
-		if(this.IsListeningToChannel(Channel)) return;
+	public void StartListeningToChannel(DiscordChannel channel, OnChannelMessage fCallback) {
+		if(this.IsListeningToChannel(channel)) return;
 		
-		Handle channels = this.GetListeningChannels();
-		
-		if(channels == null) {
-			channels = json_array();
-			json_object_set(this, "listeningChannels", channels);
+		JSON_Array hChannels = this.GetListeningChannels();
+		if(hChannels == null) {
+			hChannels = new JSON_Array();
+			this.SetObject("listeningChannels", hChannels);
 		}
 		
-		json_array_append(channels, Channel);
+		hChannels.PushObject(channel);
 		
 		//Handle fForward = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_String, Param_String, Param_String, Param_String, Param_Cell);
 		//AddToForward(fForward, GetMyHandle(), callback);
 		
-		this.StartTimer(Channel, fCallback);
+		this.StartTimer(channel, fCallback);
 	}
 	
 	

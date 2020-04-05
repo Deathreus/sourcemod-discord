@@ -1,9 +1,12 @@
-methodmap DiscordWebHook < Handle {
+#include <discord/message>
+
+methodmap DiscordWebHook < JSON_Object {
 	public DiscordWebHook(char[] url) {
-		Handle mp = json_object();
-		json_object_set_new(mp, "__url", json_string(url));
-		Handle data = json_object();
-		json_object_set_new(mp, "__data", data);
+		JSON_Object mp = new JSON_Object();
+		mp.SetString("__url", url);
+
+		JSON_Object data = new JSON_Object();
+		mp.SetObject("__data", data);
 
 		return view_as<DiscordWebHook>(mp);
 	}
@@ -24,119 +27,70 @@ methodmap DiscordWebHook < Handle {
 		}
 
 		public set(bool value) {
-			json_object_set_new(this, "__slack", (value) ? json_true() : json_false());
+			this.SetBool("__slack", value);
 		}
 	}
 
-	property Handle Data {
+	property JSON_Object Data {
 		public get() {
-			return json_object_get(this, "__data");
+			return this.GetObject("__data");
 		}
 
-		public set(Handle value) {
-			json_object_set_new(this, "__data", value);
+		public set(JSON_Object value) {
+			if(this.HasKey("__data"))
+			{
+				this.GetObject("__data").Cleanup();
+				delete this.GetObject("__data");
+			}
+			this.SetObject("__data", value);
 		}
 	}
 
-	public void UpdateDataObject(char[] key, Handle hObject) {
-		Handle data = this.Data;
-		json_object_set_new(data, key, hObject);
-		delete data;
-	}
-
-	public bool GetDataBool(char[] key, bool defaultValue=false) {
-		Handle data = this.Data;
-		bool value = JsonObjectGetBool(data, key, defaultValue);
-		delete data;
-		return value;
-	}
-
-	public bool GetDataString(char[] key, char[] buffer, int maxlength) {
-		Handle data = this.Data;
-		bool success = JsonObjectGetString(data, key, buffer, maxlength);
-		delete data;
-		return success;
-	}
-
-	/**
-	 * Note: Deletes the MessageEmbed Object!
-	 */
-	public void Embed(MessageEmbed Object) {
-		//this.UpdateDataObject("embeds", Object);
-		Handle data = this.Data;
-		Handle hArray = json_object_get(data, "embeds");
+	public void Embed(DiscordEmbed Object) {
+		JSON_Array hArray = this.Data.GetObject("embeds");
 
 		if(hArray == null) {
-			hArray = json_array();
-			json_object_set(data, "embeds", hArray);
+			hArray = new JSON_Array();
+			this.Data.SetObject("embeds", hArray);
 		}
 
-		json_array_append_new(hArray, Object);
-		delete hArray;
-		delete data;
-
+		hArray.PushObject(Object);
 	}
 
-	property bool tts {
+	property bool TTS {
 		public get() {
-			return this.GetDataBool("tts", false);
+			return JsonObjectGetBool(this.Data, "tts");
 		}
 
 		public set(bool value) {
-			this.UpdateDataObject("tts", json_boolean(value));
+			this.Data.SetBool("tts", value);
 		}
 	}
 
 	public bool GetUsername(char[] buffer, int maxlength) {
-		return this.GetDataString("username", buffer, maxlength);
+		return JsonObjectGetString(this.Data, "username", buffer, maxlength);
 	}
 
 	public void SetUsername(const char[] name) {
-		this.UpdateDataObject("username", json_string(name));
+		this.Data.SetString("username", name);
 	}
 
 	public bool GetAvatar(char[] buffer, int maxlength) {
-		return this.GetDataString("icon_url", buffer, maxlength);
+		return JsonObjectGetString(this.Data, "icon_url", buffer, maxlength);
 	}
 
 	public void SetAvatar(const char[] icon_url) {
-		this.UpdateDataObject("icon_url", json_string(icon_url));
+		this.Data.SetString("icon_url", icon_url);
 	}
 
 	public bool GetContent(char[] buffer, int maxlength) {
-		return this.GetDataString("content", buffer, maxlength);
+		return JsonObjectGetString(this.Data, "content", buffer, maxlength);
 	}
 
 	public void SetContent(const char[] content) {
-		this.UpdateDataObject("content", json_string(content));
+		this.Data.SetString("content", content);
 	}
 
-	/*property Handle OnComplete {
-		public get() {
-			Handle fForward = null;
-			if(!GetTrieValue(this, "callback", fForward)) {
-				return null;
-			}
-
-			return fForward;
-		}
-
-		public set(Handle value) {
-			SetTrieValue(this, "callback", value);
-			SetTrieValue(this, "plugin", GetMyHandle());
-		}
-	}
-
-	property Handle CallbackPlugin {
-		public get() {
-			Handle value = null;
-			if(!GetTrieValue(this, "plugin", value)) {
-				return null;
-			}
-
-			return value;
-		}
-	}*/
-
+	/*** NOTE: Object is destroyed upon completion ***/
 	public native void Send();
 };

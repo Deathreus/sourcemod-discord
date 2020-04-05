@@ -7,12 +7,12 @@ enum
 	GUILD_CATEGORY
 };
 
-methodmap DiscordChannel < StringMap {
+methodmap DiscordChannel < JSON_Object {
 	public DiscordChannel() {
-		Handle hObj = json_object();
+		JSON_Object hObj = new JSON_Object();
 		return view_as<DiscordChannel>(hObj);
 	}
-	
+
 	public native void SendMessage(DiscordBot Bot, char[] message, OnMessageSent fCallback=INVALID_FUNCTION, any data=0);
 
 	public void GetGuildID(char[] buffer, int maxlength) {
@@ -48,7 +48,7 @@ methodmap DiscordChannel < StringMap {
 	}
 	
 	public void SetLastMessageID(const char[] id) {
-		json_object_set_new(this, "last_message_id", json_string(id));
+		this.SetString("last_message_id", id);
 	}
 	
 	property int Type {
@@ -75,3 +75,9 @@ methodmap DiscordChannel < StringMap {
 		}
 	}
 };
+
+methodmap DiscordGuildChannel < DiscordChannel {
+	property DiscordChannel AsChannel {
+		public get() { return view_as<DiscordChannel>(this); }
+	}
+}
