@@ -85,9 +85,3 @@ methodmap RoleList < Handle {
 	}
 	
 };
-
-#include <discord/channel>
-#include <discord/message_embed>
-#include <discord/webhook>
-#include <discord/bot>
-#include <discord/GuildMember>
