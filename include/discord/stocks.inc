@@ -10,31 +10,31 @@ stock bool RenameJsonObject(JSON_Object hJson, char[] key, char[] toKey) {
 			hJson.Remove(key);
 			hJson.SetString(toKey, string);
 		}
-	    case Type_Int: {
+		case Type_Int: {
 	    	int value = JsonObjectGetInt(hJson, key);
 	    	hJson.Remove(key);
 	    	hJson.SetInt(toKey, value);
 	    }
-	    case Type_Float: {
+		case Type_Float: {
 	    	float value = JsonObjectGetFloat(hJson, key);
 	    	hJson.Remove(key);
 	    	hJson.SetFloat(toKey, value);
 	    }
-	    case Type_Bool: {
+		case Type_Bool: {
 	    	bool value = JsonObjectGetBool(hJson, key);
 	    	hJson.Remove(key);
 	    	hJson.SetBool(toKey, value);
 	    }
-	    case Type_Null: {
+		case Type_Null: {
 	    	hJson.Remove(key); // We are moving this, don't delete
 	    	hJson.SetNull(toKey);
 	    }
-	    case Type_Object: {
+		case Type_Object: {
 	    	JSON_Object obj = hJson.GetObject(key);
 	    	hJson.Remove(key); // We are moving this, don't delete
 	    	hJson.SetObject(toKey, obj);
 	    }
-	    default:
+		default:
 	    	return false;
 	}
 

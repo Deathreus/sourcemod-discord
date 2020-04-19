@@ -7,11 +7,8 @@ methodmap DiscordBot < JSON_Object {
 	}
 	
 	public void StopListening() {
-		JSON_Object hObject = this.GetObject("listeningChannels");
-		this.SetNull("listeningChannels");
-
-		hObject.Cleanup();
-		delete hObject;
+		this.GetObject("listeningChannels").Cleanup();
+		delete this.GetObject("listeningChannels");
 	}
 	
 	property float MessageCheckInterval {

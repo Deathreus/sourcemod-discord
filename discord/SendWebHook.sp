@@ -51,7 +51,7 @@ public Action SendWebHookDelayed(Handle timer, DiscordWebHook data) {
 	SendWebHook(data);
 }
 
-public SendWebHookReceiveData(Handle request, bool failure, int offset, int statuscode, JSON_Object data) {
+public SendWebHookReceiveData(Handle request, bool failure, int offset, int statuscode, DiscordWebHook data) {
 	if(failure || (statuscode != _:k_EHTTPStatusCode200OK && statuscode != _:k_EHTTPStatusCode204NoContent)) {
 		if(statuscode == _:k_EHTTPStatusCode400BadRequest) {
 			PrintToServer("BAD REQUEST");
