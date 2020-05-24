@@ -2,6 +2,8 @@
 
 #define PLUGIN_VERSION "0.1.103"
 
+#pragma dynamic 2097152
+
 #include <sourcemod>
 #include <discord>
 #include <discord/channel>

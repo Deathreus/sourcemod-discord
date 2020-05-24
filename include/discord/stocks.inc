@@ -5,7 +5,7 @@ stock bool RenameJsonObject(JSON_Object hJson, char[] key, char[] toKey) {
 	switch(hJson.GetKeyType(key))
 	{
 		case Type_String: {
-			char string[256];
+			char string[1024];
 			hJson.GetString(key, string, sizeof string);
 			hJson.Remove(key);
 			hJson.SetString(toKey, string);
