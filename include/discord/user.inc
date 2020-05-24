@@ -33,8 +33,10 @@ methodmap DiscordUser < JSON_Object {
 		return JsonObjectGetString(this, "email", buffer, maxlength);
 	}
 	
-	public bool IsBot() {
-		return JsonObjectGetBool(this, "bot");
+	property bool IsBot {
+		public get() {
+			return JsonObjectGetBool(this, "bot");
+		}
 	}
 };
 

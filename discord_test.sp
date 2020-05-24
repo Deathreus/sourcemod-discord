@@ -49,10 +49,14 @@ public void OnChannelRetrieved(DiscordBot bot, char[] guild, DiscordChannel chan
 
 public void OnChannelMessage(DiscordBot bot, DiscordChannel channel, DiscordMessage message)
 {
+	DiscordUser author = message.GetAuthor();
+	if(author.IsBot)
+		return;
+
 	char sAuthor[128];
-	message.GetAuthor().GetUsername(sAuthor, sizeof(sAuthor));
+	author.GetUsername(sAuthor, sizeof(sAuthor));
 	char sDiscriminator[6];
-	message.GetAuthor().GetDiscriminator(sDiscriminator, sizeof(sDiscriminator));
+	author.GetDiscriminator(sDiscriminator, sizeof(sDiscriminator));
 
 	char sChannel[64];
 	channel.GetName(sChannel, sizeof(sChannel));
