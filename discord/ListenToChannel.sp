@@ -5,7 +5,7 @@ public int Native_DiscordBot_StartTimer(Handle plugin, int numParams) {
 	
 	JSON_Object hObj = new JSON_Object();
 	hObj.SetObject("bot", bot);
-	hObj.SetObject("channel", channel);
+	hObj.SetObject("channel", channel.ShallowCopy());
 	
 	Handle fwd = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 	AddToForward(fwd, plugin, func);
@@ -83,7 +83,9 @@ public int OnGetMessage_Data(const char[] data, JSON_Object hObj) {
 	hObj.GetValue("callback", fwd);
 	
 	if(!bot.IsListeningToChannel(channel) || GetForwardFunctionCount(fwd) == 0) {
+		hObj.Cleanup();
 		delete hObj;
+
 		delete fwd;
 		return;
 	}
@@ -101,8 +103,10 @@ public int OnGetMessage_Data(const char[] data, JSON_Object hObj) {
 			
 			if(!bot.IsListeningToChannelID(channelID)) {
 				//Channel is no longer listened to, remove any handles & stop
-				delete fwd;
+				hObj.Cleanup();
 				delete hObj;
+
+				delete fwd;
 
 				hJson.Cleanup();
 				delete hJson;

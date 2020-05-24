@@ -27,7 +27,7 @@ methodmap DiscordBot < JSON_Object {
 		}
 	}
 	
-	public native void StartTimer(DiscordChannel Channel, OnChannelMessage fCallback);
+	public native void StartTimer(DiscordChannel channel, OnChannelMessage fCallback);
 	
 	/** 
 	 * Retrieves a list of Channels the bot is listening to for messages
@@ -41,6 +41,8 @@ methodmap DiscordBot < JSON_Object {
 	 * @param DiscordChannel Channel
 	 */
 	public bool IsListeningToChannel(DiscordChannel channel) {
+		if(channel == null) return false;
+
 		char id[32];
 		channel.GetID(id, sizeof(id));
 		
@@ -84,6 +86,8 @@ methodmap DiscordBot < JSON_Object {
 	 * @param DiscordChannel Channel
 	 */
 	public void StopListeningToChannel(DiscordChannel channel) {
+		if(channel == null) return;
+
 		char id[32];
 		channel.GetID(id, sizeof(id));
 		
@@ -124,7 +128,7 @@ methodmap DiscordBot < JSON_Object {
 	
 	public DiscordChannel GetListeningChannelByID(const char[] id) {
 		JSON_Array hChannels = this.GetListeningChannels();
-		if(hChannels == null) return false;
+		if(hChannels == null) return null;
 		
 		for(int i = 0; i < hChannels.Length; i++) {
 			DiscordChannel tempChannel = view_as<DiscordChannel>(hChannels.GetObject(i));
@@ -153,7 +157,7 @@ methodmap DiscordBot < JSON_Object {
 			this.SetObject("listeningChannels", hChannels);
 		}
 		
-		hChannels.PushObject(channel);
+		hChannels.PushObject(channel.ShallowCopy());
 		
 		//Handle fForward = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_String, Param_String, Param_String, Param_String, Param_Cell);
 		//AddToForward(fForward, GetMyHandle(), callback);
