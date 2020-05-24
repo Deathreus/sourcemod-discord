@@ -1,3 +1,8 @@
+#if defined _discord_message_included
+	#endinput
+#endif
+#define _discord_message_included
+
 #include <discord/user>
 
 methodmap DiscordMessage < JSON_Object {

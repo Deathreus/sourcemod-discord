@@ -1,3 +1,8 @@
+#if defined _discord_user_included
+	#endinput
+#endif
+#define _discord_user_included
+
 methodmap DiscordUser < JSON_Object {
 	public bool GetID(char[] buffer, int maxlength) {
 		return JsonObjectGetString(this, "id", buffer, maxlength);

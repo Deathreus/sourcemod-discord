@@ -1,3 +1,10 @@
+#if defined _discord_bot_included
+ #endinput
+#endif
+#define _discord_bot_included
+
+#include <discord/channel>
+
 methodmap DiscordBot < JSON_Object {
 	public DiscordBot(const char[] token) {
 		JSON_Object json = new JSON_Object();

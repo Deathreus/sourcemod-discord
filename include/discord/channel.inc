@@ -1,3 +1,8 @@
+#if defined _discord_channel_included
+	#endinput
+#endif
+#define _discord_channel_included
+
 enum
 {
 	GUILD_TEXT = 0,

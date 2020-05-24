@@ -1,3 +1,8 @@
+#if defined _discord_webhook_included
+	#endinput
+#endif
+#define _discord_webhook_included
+
 #include <discord/message>
 
 methodmap DiscordWebHook < JSON_Object {
