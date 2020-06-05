@@ -159,9 +159,6 @@ methodmap DiscordBot < JSON_Object {
 		
 		hChannels.PushObject(channel.ShallowCopy());
 		
-		//Handle fForward = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_String, Param_String, Param_String, Param_String, Param_Cell);
-		//AddToForward(fForward, GetMyHandle(), callback);
-		
 		this.StartTimer(channel, fCallback);
 	}
 	

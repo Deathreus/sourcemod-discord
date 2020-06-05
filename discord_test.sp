@@ -27,6 +27,12 @@ public void OnConfigsExecuted()
 	char sToken[96];
 	cvarToken.GetString(sToken, sizeof(sToken));
 
+	if(g_Bot != null)
+	{
+		g_Bot.Cleanup();
+		delete g_Bot;
+	}
+
 	g_Bot = new DiscordBot(sToken);
 	g_Bot.GetGuilds(OnGuildRetrieved);
 }
