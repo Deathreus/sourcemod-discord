@@ -17,12 +17,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Setup Environment
-        run: |
-          SOURCEMOD_PATH=$GITHUB_WORKSPACE/addons/sourcemod
-          echo ::set-env name=SOURCEMOD_PATH::$SOURCEMOD_PATH
-          echo ::set-env name=SCRIPTS_PATH::$SOURCEMOD_PATH/scripting
-      
       - name: Setup SourcePawn Compiler
         uses: rumblefrog/setup-sp@master
         with:
@@ -39,5 +33,5 @@ jobs:
       - name: Upload plugin artifact
         uses: actions/upload-artifact@master
         with:
-          name: Plugin
+          name: Plugins
           path: compiled/
