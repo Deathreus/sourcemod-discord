@@ -28,16 +28,13 @@ jobs:
         with:
           version: ${{ matrix.sm_version }}
 
-      - run: |
-          mkdir -p compiled
-          cp -r discord_api.sp addons/sourcemod/scripting/discord_api.sp
+      - name: Create directory
+        run: mkdir -p compiled
         
       - name: Compile Plugins
         run: |
-          spcomp -i include \
-          $SCRIPTS_PATH/discord_api.sp -o compiled/discord_api.smx
-          spcomp -i include \
-          $SCRIPTS_PATH/discord_test.sp -o compiled/discord_test.smx
+          spcomp -i include discord_api.sp -o compiled/discord_api.smx
+          spcomp -i include discord_test.sp -o compiled/discord_test.smx
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@master
