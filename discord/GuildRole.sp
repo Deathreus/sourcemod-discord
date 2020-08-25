@@ -27,7 +27,7 @@ static void GetGuildRoles(JSON_Object hData) {
 	JsonObjectGetString(hData, "guild", guild, sizeof(guild));
 	
 	char url[256];
-	FormatEx(url, sizeof(url), "https://discordapp.com/api/guilds/%s/roles", guild);
+	FormatEx(url, sizeof(url), "https://discord.com/api/guilds/%s/roles", guild);
 	
 	char route[128];
 	FormatEx(route, sizeof(route), "guild/%s/roles", guild);
