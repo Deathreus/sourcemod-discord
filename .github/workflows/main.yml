@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Environment
         run: |
@@ -28,13 +28,16 @@ jobs:
         with:
           version: ${{ matrix.sm_version }}
 
-      - name: Create directory
-        run: mkdir -p compiled
+      - run: |
+          mkdir -p compiled
+          cp -r scripting addons/sourcemod/
         
       - name: Compile Plugins
         run: |
-          spcomp -i $SCRIPTS_PATH/include $SCRIPTS_PATH/discord_api.sp
-          spcomp -i $SCRIPTS_PATH/include $SCRIPTS_PATH/discord_test.sp
+          spcomp -i include \
+          $SCRIPTS_PATH/discord_api.sp -o compiled/discord_api.smx
+          spcomp -i include \
+          $SCRIPTS_PATH/discord_test.sp -o compiled/discord_test.smx
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@master
