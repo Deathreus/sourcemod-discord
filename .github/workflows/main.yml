@@ -42,7 +42,7 @@ jobs:
       - name: Copy dependencies
         run: |
           cp sm_json/addons/sourcemod/scripting/include/json.inc include/
-          cp sm_json/addons/sourcemod/scripting/include/json include/
+          cp -r sm_json/addons/sourcemod/scripting/include/json include/json/
           cp SteamWorks/Pawn/includes/SteamWorks.inc include/
       
       - name: Compile Plugins
