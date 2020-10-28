@@ -20,14 +20,14 @@ jobs:
       - name: Checkout sm-json
         uses: actions/checkout@v2
         with:
-          repository: https://github.com/clugg/sm-json
+          repository: clugg/sm-json
           ref: 636d474b63f8c42fca8284501f9b44b96cfd9bd1
           path: sm-json
         
       - name: Checkout SteamWorks
         uses: actions/checkout@v2
         with:
-          repository: https://github.com/KyleSanderson/SteamWorks
+          repository: KyleSanderson/SteamWorks
           ref: ef731826ddf504d2d8caaa5fcde4c6a7045de6fa
           path: SteamWorks
       
