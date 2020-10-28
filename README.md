@@ -9,7 +9,7 @@ http://scooterx3.net/2016-05-25/discord-bot.html
 (Or paste this into browser -> console: http://pastebin.com/3g2HbTjY )
 
 ## Installation
-- Snag [this JSON library](https://github.com/clugg/sm-json/releases/tag/v3.1.0) and place it in your includes folder
+- Snag [this JSON library](https://github.com/clugg/sm-json/releases/tag/v3.1.1) and place it in your includes folder
 - Fetch [SteamWorks](https://github.com/KyleSanderson/SteamWorks/releases/tag/1.2.3c), put SteamWorks.inc in your includes and SteamWorks.dll in /sourcemod/extensions
 - Put discord.inc and /discord in your includes folder
 - Compile discord_api.sp and put it in your /sourcemod/plugins folder
