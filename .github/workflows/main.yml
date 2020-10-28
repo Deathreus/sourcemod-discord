@@ -16,13 +16,15 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
+        with:
+          path: sourcemod_discord
       
       - name: Checkout sm-json
         uses: actions/checkout@v2
         with:
           repository: clugg/sm-json
           ref: 636d474b63f8c42fca8284501f9b44b96cfd9bd1
-          path: sm-json
+          path: sm_json
         
       - name: Checkout SteamWorks
         uses: actions/checkout@v2
@@ -33,9 +35,9 @@ jobs:
       
       - name: Copy dependencies
         run: |
-          cp sm-json/addons/sourcemod/scripting/json.inc include/json.inc
-          cp sm-json/addons/sourcemod/scripting/json include/json
-          cp SteamWorks/Pawn/includes/SteamWorks.inc include/SteamWorks.inc
+          cp sm_json/addons/sourcemod/scripting/json.inc include/
+          cp sm_json/addons/sourcemod/scripting/json include/json
+          cp SteamWorks/Pawn/includes/SteamWorks.inc include/
 
       - name: Setup SourcePawn Compiler
         uses: rumblefrog/setup-sp@master
