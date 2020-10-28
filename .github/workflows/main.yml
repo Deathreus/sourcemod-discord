@@ -16,6 +16,24 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
+      
+      - name: Checkout sm-json
+        uses: actions/checkout@v2
+        with:
+          repository: https://github.com/clugg/sm-json/tree/v3.1.0
+          path: sm-json
+        
+      - name: Checkout SteamWorks
+        uses: actions/checkout@v2
+        with:
+          repository: https://github.com/KyleSanderson/SteamWorks/tree/1.2.3c
+          path: SteamWorks
+      
+      - name: Copy dependencies
+        run: |
+          cp sm-json/addons/sourcemod/scripting/json.inc include/json.inc
+          cp sm-json/addons/sourcemod/scripting/json include/json
+          cp SteamWorks/Pawn/includes/SteamWorks.inc include/SteamWorks.inc
 
       - name: Setup SourcePawn Compiler
         uses: rumblefrog/setup-sp@master
