@@ -16,8 +16,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
-        with:
-          path: sourcemod_discord
       
       - name: Checkout sm-json
         uses: actions/checkout@v2
@@ -32,12 +30,6 @@ jobs:
           repository: KyleSanderson/SteamWorks
           ref: ef731826ddf504d2d8caaa5fcde4c6a7045de6fa
           path: SteamWorks
-      
-      - name: Copy dependencies
-        run: |
-          cp sm_json/addons/sourcemod/scripting/json.inc include/
-          cp sm_json/addons/sourcemod/scripting/json include/json
-          cp SteamWorks/Pawn/includes/SteamWorks.inc include/
 
       - name: Setup SourcePawn Compiler
         uses: rumblefrog/setup-sp@master
@@ -47,6 +39,12 @@ jobs:
       - name: Create directory
         run: mkdir -p compiled
         
+      - name: Copy dependencies
+        run: |
+          cp sm_json/addons/sourcemod/scripting/include/json.inc include/
+          cp sm_json/addons/sourcemod/scripting/include/json include/
+          cp SteamWorks/Pawn/includes/SteamWorks.inc include/
+      
       - name: Compile Plugins
         run: |
           spcomp -i include discord_api.sp -o compiled/discord_api.smx
