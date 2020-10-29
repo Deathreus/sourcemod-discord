@@ -1,5 +1,5 @@
 ![CI](https://github.com/Deathreus/sourcemod-discord/workflows/CI/badge.svg?event=push)
-![Build](https://github.com/Deathreus/sourcemod-discord/workflows/Create%20Release/badge.svg?event=push)
+![Build](https://github.com/Deathreus/sourcemod-discord/workflows/Build/badge.svg?event=release)
 # sourcemod-discord
 Discord API for Sourcemod. There's a lot more to add. Changes will be happening that will break existing plugins, sorry. Still a bit messy
 
