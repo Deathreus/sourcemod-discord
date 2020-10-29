@@ -25,10 +25,6 @@ stock bool RenameJsonObject(JSON_Object hJson, char[] key, char[] toKey) {
 	    	hJson.Remove(key);
 	    	hJson.SetBool(toKey, value);
 	    }
-		case JSON_Type_Null: {
-	    	hJson.Remove(key); // We are moving this, don't delete
-	    	hJson.SetNull(toKey);
-	    }
 		case JSON_Type_Object: {
 	    	JSON_Object obj = hJson.GetObject(key);
 	    	hJson.Remove(key); // We are moving this, don't delete
