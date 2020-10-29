@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: clugg/sm-json
-          ref: 3a9e22b8b4056809c95b3329e9f779b9c0be34cc
+          ref: 636d474b63f8c42fca8284501f9b44b96cfd9bd1
           path: sm_json
         
       - name: Checkout SteamWorks
