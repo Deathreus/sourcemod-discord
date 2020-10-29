@@ -7,11 +7,60 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sm_version: ['1.9.x', '1.10.x', '1.11.x']
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      
+      - name: Checkout sm-json
+        uses: actions/checkout@v2
+        with:
+          repository: clugg/sm-json
+          ref: 636d474b63f8c42fca8284501f9b44b96cfd9bd1
+          path: sm_json
+        
+      - name: Checkout SteamWorks
+        uses: actions/checkout@v2
+        with:
+          repository: KyleSanderson/SteamWorks
+          ref: ef731826ddf504d2d8caaa5fcde4c6a7045de6fa
+          path: SteamWorks
+
+      - name: Setup SourcePawn Compiler
+        uses: rumblefrog/setup-sp@master
+        with:
+          version: ${{ matrix.sm_version }}
+
+      - name: Create directory
+        run: mkdir -p compiled
+        
+      - name: Copy dependencies
+        run: |
+          cp sm_json/addons/sourcemod/scripting/include/json.inc include/
+          cp -r sm_json/addons/sourcemod/scripting/include/json include/json/
+          cp SteamWorks/Pawn/includes/SteamWorks.inc include/
+      
+      - name: Compile Plugins
+        run: |
+          spcomp -i include discord_api.sp -o compiled/discord_api.smx
+          spcomp -i include discord_test.sp -o compiled/discord_test.smx
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: Plugins
+          path: compiled/
   release:
-    needs: CI.build
+    needs: build
 
     name: Create Release
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
