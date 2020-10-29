@@ -57,8 +57,6 @@ jobs:
           path: compiled/
   release:
     needs: build
-
-    name: Create Release
     runs-on: ubuntu-latest
     
     steps:
